@@ -1,11 +1,17 @@
-﻿using MediatR;
+﻿using System.Linq;
+using MediatR;
+using Microsoft.AspNet.OData.Builder;
+using Microsoft.AspNet.OData.Extensions;
+using Microsoft.AspNet.OData.Formatter;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.DSX.ProjectTemplate.Command;
+using Microsoft.DSX.ProjectTemplate.Data.DTOs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Net.Http.Headers;
 
 [assembly: ApiConventionType(typeof(DefaultApiConventions))]
 namespace Microsoft.DSX.ProjectTemplate.API
@@ -43,6 +49,20 @@ namespace Microsoft.DSX.ProjectTemplate.API
                 .AddCors()
                 .AddSwaggerDocument()
                 .AddControllers();
+
+            services.AddOData();
+            
+            services.AddMvcCore(options =>
+            {
+                foreach (var outputFormatter in options.OutputFormatters.OfType<ODataOutputFormatter>().Where(_ => _.SupportedMediaTypes.Count == 0))
+                {
+                    outputFormatter.SupportedMediaTypes.Add(new MediaTypeHeaderValue("application/prs.odatatestxx-odata"));
+                }
+                foreach (var inputFormatter in options.InputFormatters.OfType<ODataInputFormatter>().Where(_ => _.SupportedMediaTypes.Count == 0))
+                {
+                    inputFormatter.SupportedMediaTypes.Add(new MediaTypeHeaderValue("application/prs.odatatestxx-odata"));
+                }
+            });
         }
 
         /// <summary>
@@ -68,7 +88,14 @@ namespace Microsoft.DSX.ProjectTemplate.API
                 .UseRouting()
                 .UseCors("CorsPolicy")
                 .UseAuthorization()
-                .UseEndpoints(endpoints => endpoints.MapControllers());
+                .UseEndpoints(endpoints => {
+                    endpoints.MapControllers();
+
+                    var builder = new ODataConventionModelBuilder(app.ApplicationServices);
+                    builder.EntitySet<GroupDto>("Groups");
+                    endpoints.Select().Expand().Filter().OrderBy().MaxTop(100).Count();
+                    endpoints.MapODataRoute("odata", "odata", builder.GetEdmModel());
+                });
         }
     }
 }

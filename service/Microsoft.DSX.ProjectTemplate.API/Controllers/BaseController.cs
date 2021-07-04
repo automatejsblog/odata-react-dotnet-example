@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNet.OData;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Microsoft.DSX.ProjectTemplate.API.Controllers

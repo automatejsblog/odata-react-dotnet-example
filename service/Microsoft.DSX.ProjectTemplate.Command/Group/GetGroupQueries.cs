@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 
 namespace Microsoft.DSX.ProjectTemplate.Command.Group
 {
+    public class GetQueryableGroupsQuery : IRequest<IQueryable<GroupDto>> { }
+
     public class GetAllGroupsQuery : IRequest<IEnumerable<GroupDto>> { }
 
     public class GetGroupByIdQuery : IRequest<GroupDto>
@@ -21,6 +23,7 @@ namespace Microsoft.DSX.ProjectTemplate.Command.Group
 
     public class GroupQueryHandler : QueryHandlerBase,
         IRequestHandler<GetAllGroupsQuery, IEnumerable<GroupDto>>,
+        IRequestHandler<GetQueryableGroupsQuery, IQueryable<GroupDto>>,
         IRequestHandler<GetGroupByIdQuery, GroupDto>
     {
         public GroupQueryHandler(
@@ -30,6 +33,14 @@ namespace Microsoft.DSX.ProjectTemplate.Command.Group
             IAuthorizationService authorizationService)
             : base(mediator, database, mapper, authorizationService)
         {
+        }
+
+        // GET Queryable
+        public Task<IQueryable<GroupDto>> Handle(GetQueryableGroupsQuery request, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(
+                Database.Groups
+                .Select(x => Mapper.Map<GroupDto>(x)));
         }
 
         // GET ALL
