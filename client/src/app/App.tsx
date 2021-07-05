@@ -1,4 +1,5 @@
 import 'office-ui-fabric-react/dist/css/fabric.css';
+import '@progress/kendo-theme-default/dist/all.css';
 
 import { IButtonProps, Icon, Image, initializeIcons, Nav, Text } from '@fluentui/react';
 import About from 'app/pages/about/About';

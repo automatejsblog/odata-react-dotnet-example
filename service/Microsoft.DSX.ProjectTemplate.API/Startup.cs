@@ -51,7 +51,6 @@ namespace Microsoft.DSX.ProjectTemplate.API
                 .AddControllers();
 
             services.AddOData();
-            
             services.AddMvcCore(options =>
             {
                 foreach (var outputFormatter in options.OutputFormatters.OfType<ODataOutputFormatter>().Where(_ => _.SupportedMediaTypes.Count == 0))
@@ -92,6 +91,7 @@ namespace Microsoft.DSX.ProjectTemplate.API
                     endpoints.MapControllers();
 
                     var builder = new ODataConventionModelBuilder(app.ApplicationServices);
+                    builder.EnableLowerCamelCase();
                     builder.EntitySet<GroupDto>("Groups");
                     endpoints.Select().Expand().Filter().OrderBy().MaxTop(100).Count();
                     endpoints.MapODataRoute("odata", "odata", builder.GetEdmModel());
