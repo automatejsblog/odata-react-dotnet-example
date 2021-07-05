@@ -1,5 +1,7 @@
-import { DetailsList, DetailsListLayoutMode, IColumn, Spinner, SpinnerSize } from '@fluentui/react';
-import { ApiClient, IGroupDto } from 'app/generated/backend';
+import { Spinner, SpinnerSize } from '@fluentui/react';
+import { State, toODataString } from '@progress/kendo-data-query';
+import { Grid, GridColumn as Column, GridDataStateChangeEvent } from '@progress/kendo-react-grid';
+import { IGroupDto } from 'app/generated/backend';
 import React, { useEffect, useState } from 'react';
 
 const Groups: React.FC = () => {
@@ -8,35 +10,20 @@ const Groups: React.FC = () => {
         isFetching: false
     });
 
-    const groupKeys: IGroupDto = {
-        id: null,
-        name: '',
-        isActive: false,
-        createdDate: null,
-        updatedDate: null
-    };
+    const [dataState, setDataState] = useState<State | null>(null);
 
-    const columns = Object.keys(groupKeys).map(
-        (key): IColumn => {
-            return {
-                key,
-                name: key.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => {
-                    return str.toUpperCase();
-                }),
-                fieldName: key,
-                minWidth: 100,
-                maxWidth: 200,
-                isResizable: true
-            };
-        }
-    );
+    const dataStateChange = (e: GridDataStateChangeEvent) => {
+        setDataState(e.dataState);
+    };
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setData({ groups: data.groups, isFetching: true });
-                const result = await new ApiClient(process.env.REACT_APP_API_BASE).groups_GetAllGroups();
-                setData({ groups: result, isFetching: false });
+                const queryString = dataState ? toODataString(dataState) : '';
+                const result = await fetch(process.env.REACT_APP_API_BASE + '/odata/groups?' + queryString);
+                const groups = (await result.json()).value;
+                setData({ groups, isFetching: false });
             } catch (e) {
                 console.log(e);
                 setData({ groups: data.groups, isFetching: false });
@@ -45,23 +32,23 @@ const Groups: React.FC = () => {
 
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [dataState]);
 
     return (
         <>
             <h2>Groups</h2>
-            <DetailsList
-                items={data.groups.map((group) => {
-                    return {
-                        ...group,
-                        createdDate: group.createdDate.toLocaleString(),
-                        updatedDate: group.updatedDate.toLocaleString(),
-                        isActive: group.isActive.toString()
-                    };
-                })}
-                columns={columns}
-                layoutMode={DetailsListLayoutMode.justified}
-            />
+            <Grid
+                filterable={true}
+                sortable={true}
+                pageable={true}
+                {...dataState}
+                data={data.groups}
+                onDataStateChange={dataStateChange}>
+                <Column field="name" title="Name" />
+                <Column field="createdDate" filter="date" title="Created" />
+                <Column field="updatedDate" filter="date" title="Updated" />
+                <Column field="isActive" filter="boolean" title="Is Active" />
+            </Grid>
             {data.isFetching && <Spinner size={SpinnerSize.large} />}
         </>
     );
